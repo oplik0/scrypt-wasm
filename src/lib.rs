@@ -29,3 +29,27 @@ pub fn scrypt(password: &str, salt: &str,  n: u32, r: u32, p: u32, dklen: usize)
      scrypt::scrypt(&pass_, &salt_, &params, &mut result);
      hex::encode(result)
 }
+
+#[wasm_bindgen]
+pub fn scrypt_simple(password: &str, n: u32, r: u32, p: u32) -> String {
+    let log_n = (32 - n.leading_zeros() - 1) as u8;
+    if log_n as u32 >= r * 16 {
+		return String::from("Invalid r");
+	}
+	if p as u64 > ((u32::max_value() as u64 - 1) * 32)/(128 * (r as u64)) {
+		return String::from("Invalid p");
+    }
+    let params = scrypt::ScryptParams::new(log_n,r,p);
+    match scrypt::scrypt_simple(&password, &params) {
+        Ok(p) => return p,
+        Err(_err) => return String::from("IO Error"),
+    };
+}
+
+#[wasm_bindgen]
+pub fn scrypt_check(password: &str, hashed_value: &str) -> bool {
+    match scrypt::scrypt_check(password, hashed_value) {
+        Ok(_p) => return true,
+        Err(_err) => return false,
+    };
+}
